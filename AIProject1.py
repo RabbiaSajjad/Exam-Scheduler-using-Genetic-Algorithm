@@ -33,7 +33,6 @@ class ControllerClass:
     def getRoomList(self):
         return self.roomList
 
-
     def readCourses(self,filename):
         with open(filename, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -49,7 +48,6 @@ class ControllerClass:
             
         self.courseList=courseList
 
-
     def readRooms(self,filename):
         with open(filename, 'r') as csv_file:
             roomList=[]
@@ -57,12 +55,9 @@ class ControllerClass:
             for row in csv_reader:
                 number=row[0]
                 obj=Room(number)
-                roomList.append(obj)
-             
+                roomList.append(obj)           
     #      print(f'Processed {line_count} lines.')
             self.roomList=roomList
-            
-       
 
     def readTeachers(self,filename):
         with open(filename, 'r') as csv_file:
@@ -79,8 +74,6 @@ class ControllerClass:
                 else:
                     self.teacherList=teacherList
                     break
-
- 
 
     def readStudents(self,filename):
         with open(filename, 'r') as csv_file:
@@ -121,23 +114,17 @@ class ControllerClass:
                                     y.courseList.append(x)
                                     y.courseCount=y.courseCount+1
                                     break
-
-                
-                line_count=line_count+1
-                
+                line_count=line_count+1             
     #      print(f'Processed {line_count} lines.')
-            for x in self.studentList:
+            '''for x in self.studentList:
                 print(x.studentName,x.courseCount)
                 for y in x.courseList:
-                    print(y.courseCode)
-
+                    print(y.courseCode)'''
 
 class Course:
     def __init__(self, courseCode, courseName):
         self.courseCode=courseCode
         self.courseName=courseName
-
-    
 
 class Student:
     def __init__(self, studentName, courseList, courseCount):
@@ -153,60 +140,85 @@ class Room:
     def __init__(self,roomNo):
         self.roomNo=roomNo
 
+class Exam:
+    def __init__(self, course, invigilator, roomNo, day, timeSlot):
+        self.course = course
+        self.invigilator = invigilator
+        self.roomNo = roomNo
+        self.day = day
+        self.timeSlot = timeSlot
+
+class Day:
+    def __init__(self):
+        self.examsList = []
+    
+    def addExam(self, course, invigilator, roomNo, day, timeSlot):
+        self.examsList.append(Exam(course, invigilator, roomNo, day, timeSlot))
 
 class Schedule:
-    def __init__(self, noOfConflicts,course, Invigilator, RoomNo, Day, TimeSlot):
-        self.noOfConflicts=noOfConflicts
-        self.course=course
-        self.Invigilator=Invigilator
-        self.RoomNo=RoomNo
-        self.Day=Day
-        self.TimeSlot=TimeSlot
-                
+    def __init__(self, Controller):
+        self.fitness = None             # if ZERO, that's our result
+        self.daysList = [Day()] * 5         # list of days having list of exams
+
+        totalRooms = len(Controller.roomList)
+        totalCourses = len(Controller.courseList)
+        totalTeachers = len(Controller.teacherList)
+        print("TOTAL COURSES: ", totalCourses)
+        # initialize random schedule for 5 days
+        for day in range(5):  #Each Schedule for 5 days
+            for timeSlot in range(4): #Each day divided into 4 time slots (Keeping duration = 2 hrs)
+                for k in range(totalRooms): #Each timeslot will furthur have 10 rooms in which exams will be held
+                    course = Controller.courseList[random.randint(0,totalCourses-1)].courseName
+                    teacher = Controller.teacherList[random.randint(0,totalTeachers-1)].teacherName
+                    roomNo = Controller.roomList[k].roomNo
+
+                    self.daysList[day].addExam(course, teacher, roomNo, day, timeSlot)
+
+                    #obj = Day(course, teacher, roomNo, day, timeSlot)
+                    #self.days.append(obj)
+                #timeSlot = timeSlot+1
+            #j = j+1
+
     def makeSchedule():
         pass
 
 class Population:
-    def __init__(self, size, scheduleList):
-        self.size=size
-        self.scheduleList=[]
+    def __init__(self, size, Controller):
+        self.size = size
+        self.scheduleList = [Schedule(Controller)] * size
+
+    def displayPopulation(self):
+        for schedule in range(self.size):          # Schedules
+            print("----------------------------------Schedule # ", self.size, "----------------------------------")
+            for day in range(5):            # days inside schedules
+                print("\nDay: ", day)
+                for exam in range(len(self.scheduleList[schedule].daysList[day].examsList)):       # exams in a day
+                    print("Course: ", self.scheduleList[schedule].daysList[day].examsList[exam].course)
+                    print("Teacher:", self.scheduleList[schedule].daysList[day].examsList[exam].invigilator)
+                    print("Room No:", self.scheduleList[schedule].daysList[day].examsList[exam].roomNo)
+                    print("Day:", self.scheduleList[schedule].daysList[day].examsList[exam].day)
+                    print("Time Slot:", self.scheduleList[schedule].daysList[day].examsList[exam].timeSlot)
+
+    # FITNESS STUFF
+
+    def calculateFitness_Population(self, Controller):
+        pass
+
+    def calculateFitness_EveryCourseScheduled(self, Controller):
+        pass
+
+    def calculateFitness_StudentExamClash(self, Controller):
+        pass
 
     
-    def initializePopulation(self,Controller):
-        totalRooms=len(Controller.roomList)
-        totalCourses=len(Controller.courseList)
-        totalTeachers=len(Controller.teacherList)
-        for i in range(self.size): #Making 10 schedules in each population from now
-            print("Schedule # "+str(i))
-            for j in range(5):  #Each Schedule for 5 days
-                              
-                TimeSlot=1
-                while(TimeSlot<5): #Each day divided into 4 time slots (Keeping duration = 2 hrs)
-                    for k in range(totalRooms): #Each timeslot will furthur have 10 rooms in which exams will be held
-                        course=Controller.courseList[random.randint(0,totalCourses-1)]
-                        teacher=Controller.teacherList[random.randint(0,totalTeachers-1)]
-                        Day=j
-                        obj=Schedule(0, course,teacher,Controller.roomList[j],Day,TimeSlot)
-                        print("\nDay: "+str(j+1)) 
-                        print("Course: "+course.courseName)
-                        print("Teacher:" + teacher.teacherName)
-                        print("Room no: "+str(k)+ " Time Slot: "+str(TimeSlot))
-                        self.scheduleList.append(obj)
-                    TimeSlot=TimeSlot+1
-                j=j+1
-            i=i+1
-
-            #This will randomly make schedules of size n
 
 
-
-
-
-Controller=ControllerClass(None, None, None, None)
+Controller = ControllerClass(None, None, None, None)
 Controller.readCourses("courses.csv")
 Controller.readTeachers("teachers.csv")
 Controller.readStudents("studentNames.csv")
 Controller.readStudentCourses("studentCourse.csv")
 Controller.readRooms("rooms.csv")
-population=Population(10,None)
-population.initializePopulation(Controller)
+population = Population(10, Controller)
+population.displayPopulation()
+#population.initializePopulation(Controller)
