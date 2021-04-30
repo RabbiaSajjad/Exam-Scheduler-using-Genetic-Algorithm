@@ -153,23 +153,34 @@ class ExamSlot:
         self.invigilator = invigilator
         self.course = course
         # 3 hour exam
-        self.startingTime = {'hours': random.randInt(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
-        self.endingTime = {'hours': startingTime['hours'] + 3, 'minutes': startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
+        self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
+        self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
 
     
 
 class Room:
 
-    def __init__(self, roomNo, studentsCapacity = 28, invigilator = None, course = None):
+    def __init__(self, roomNo, studentsCapacity = 28, Controller = None):
         self.roomNo = roomNo
         self.examSlotList = []
-        examSlot = ExamSlot(studentsCapacity, invigilator, course)
-        while self.addExamSlot(examSlot): pass
+
+        if Controller != None:
+            totalCourses = len(Controller.courseList)
+            totalTeachers = len(Controller.teacherList)
+            
+            check = True
+            while check == True: 
+                course = Controller.courseList[random.randint(0,totalCourses-1)].courseName
+                teacher = Controller.teacherList[random.randint(0,totalTeachers-1)].teacherName
+                check = self.addExamSlot(ExamSlot(studentsCapacity, teacher, course))
 
 
     def addExamSlot(self, examSlot):  # adds examSlot only if there is time available between 9am-5pm        
         # since only 2, 3 hour classes can be scheduled between 9am-5pm
-        if len(self.examSlotList) < 2:
+        if len(self.examSlotList) == 0:
+            self.examSlotList.append(examSlot)
+            return True
+        elif len(self.examSlotList) < 2:
             # check for clash/time-overlap
             for slot in self.examSlotList:
                 slot1StartingTime = examSlot.startingTime['hours'] * 3600 + examSlot.startingTime['minutes'] * 60
@@ -182,17 +193,20 @@ class Room:
                     self.examSlotList.append(examSlot)
                     return True
                 else:
-                    break
+                    print("Clash")
+                    return False
         else:
+            print("Two exams in a day already")
             return False
                 
 class Day:
-    def __init__(self):
+    def __init__(self, dayNo):
+        self.dayNo = dayNo
         self.roomsList = []
     
-    def addRoom(self, roomNo, studentsCapacity, invigilator, course):
-        room = self.Room(roomNo, studentsCapacity, invigilator, course)
-        self.roomsList.append()
+    def addRoom(self, roomNo, studentsCapacity, Controller):
+        room = Room(roomNo, studentsCapacity, Controller)
+        self.roomsList.append(room)
 
     def canAddExam(self):
         for exam in examsList:
@@ -204,18 +218,17 @@ class Day:
 class Schedule:
     def __init__(self, Controller):
         self.fitness = None             # if ZERO, that's our result
-        self.daysList = [Day()] * 5         # list of days having list of exams
+        self.daysList = []              # list of days having list of exams
+
+        for dayNo in range(5):
+            self.daysList.append(Day(dayNo))
 
         totalRooms = len(Controller.roomList)
-        totalCourses = len(Controller.courseList)
-        totalTeachers = len(Controller.teacherList)
 
         # initialize random schedule for 5 days
         for day in range(5):  #Each Schedule for 5 days (0-4)
-            for room in totalRooms:
-                course = Controller.courseList[random.randint(0,totalCourses-1)].courseName
-                teacher = Controller.teacherList[random.randint(0,totalTeachers-1)].teacherName
-                self.daysList[day].addRoom(room.roomNo, 28, course, teacher)
+            for room in range(totalRooms):
+                self.daysList[day].addRoom(Controller.roomList[room].roomNo, 28, Controller)
 
     def makeSchedule():
         pass
@@ -228,14 +241,12 @@ class Population:
     def displayPopulation(self):
         for schedule in range(self.size):          # Schedules
             print("----------------------------------Schedule # ", schedule, "----------------------------------")
-            for day in range(5):            # days inside schedules
-                print("\nDay: ", day)
-                for exam in range(len(self.scheduleList[schedule].daysList[day].examsList)):       # exams in a day
-                    print("Course: ", self.scheduleList[schedule].daysList[day].examsList[exam].course)
-                    print("Teacher:", self.scheduleList[schedule].daysList[day].examsList[exam].invigilator)
-                    print("Room No:", self.scheduleList[schedule].daysList[day].examsList[exam].roomNo)
-                    print("Day:", self.scheduleList[schedule].daysList[day].examsList[exam].day)
-                    print("Time Slot:", self.scheduleList[schedule].daysList[day].examsList[exam].examSlot)
+            for day in self.scheduleList[schedule].daysList:            # days inside schedules
+                print("\nDay: ", day.dayNo)
+                for room in day.roomsList:
+                    print("\nRoom No. ", room.roomNo)
+                    for examSlot in room.examSlotList:
+                        print("\nCourse: ", examSlot.course, " Invigilator: ", examSlot.invigilator)
 
     # FITNESS STUFF
     '''
@@ -270,6 +281,6 @@ Controller.readTeachers("teachers.csv")
 Controller.readStudents("studentNames.csv")
 Controller.readStudentCourses("studentCourse.csv")
 Controller.readRooms("rooms.csv")
+
 population = Population(10, Controller)
 population.displayPopulation()
-#population.initializePopulation(Controller)
