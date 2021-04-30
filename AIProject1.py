@@ -1,4 +1,3 @@
-
 import bisect
 import sys
 import collections
@@ -170,7 +169,7 @@ class Teacher:
 '''
 
 class ExamSlot:
-    def __init__(self, studentsCapacity, invigilator, course):
+    def __init__(self, studentsCapacity, invigilator, course, studentList):
         self.studentsCapacity = studentsCapacity
         self.students = []
         self.invigilator = invigilator
@@ -179,11 +178,15 @@ class ExamSlot:
         self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
         self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
 
+        for x in studentList:
+            for y in x.courseList:
+                if(y.courseName==course):
+                    self.students.append(x.studentName)
     
 
 class Room:
 
-    def __init__(self, roomNo, courseList, teacherList,studentsCapacity = 28):
+    def __init__(self, roomNo, courseList, teacherList,studentList,studentsCapacity = 28):
         self.roomNo = roomNo
         self.examSlotList = []
 
@@ -201,7 +204,7 @@ class Room:
                 courseList.pop(rand)
             else:
                 course = courseList[rand].courseName            
-                check = self.addExamSlot(ExamSlot(studentsCapacity, teacher, course))
+                check = self.addExamSlot(ExamSlot(studentsCapacity, teacher, course,studentList))
         #        while(check==False):
          #           check = self.addExamSlot(ExamSlot(studentsCapacity, teacher, course))        
                 if check==True and len(teacherList)>=1:
@@ -242,8 +245,8 @@ class Day:
         self.dayNo = dayNo
         self.roomsList = []
     
-    def addRoom(self, roomNo, Courses,teachers,studentsCapacity):
-        room = Room(roomNo, Courses, teachers,studentsCapacity)
+    def addRoom(self, roomNo, Courses,teachers,students,studentsCapacity):
+        room = Room(roomNo, Courses, teachers,students,studentsCapacity)
         self.roomsList.append(room)
 
     def canAddExam(self):
@@ -263,12 +266,13 @@ class Schedule:
 
   #      totalRooms = len(Controller.roomList)
         totalRooms=5
+        studentlist=Controller.studentList
         courselist=Controller.courseList
         teacherlist=Controller.teacherList #NEW COPIES OF LISTS
         # initialize random schedule for 5 days
         for day in range(5):  #Each Schedule for 5 days (0-4)
             for room in range(totalRooms):
-                self.daysList[day].addRoom(Controller.roomList[room].roomNo, courselist,teacherlist,28)
+                self.daysList[day].addRoom(Controller.roomList[room].roomNo, courselist,teacherlist,Controller.studentList,28)
 
     def makeSchedule():
         pass
@@ -288,6 +292,8 @@ class Population:
                     for examSlot in room.examSlotList:
                         print("\nCourse: ", examSlot.course, " Invigilator: ", examSlot.invigilator)
                         print("Time: ",examSlot.startingTime, " - ",examSlot.endingTime)
+                        print("Students: ",examSlot.students)
+                        
               
          
         
