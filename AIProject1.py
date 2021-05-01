@@ -231,7 +231,24 @@ class Schedule:
 
 class Individual:
 
+    def __init__(self, chromosome, Controller):
+        self.chromosome = chromosome 
+        self.fitness = self.calculateFitness(Controller)
+
+    def calculateFitness(self, Controller):
+        pass
+
+    def calculateFitness_EveryCourseScheduled(self, Controller):  # if not then fitness of chromosome += 1
+        pass
+
+    def calculateFitness_StudentClash(self, Controller):
+        pass
+
     def calculateFitness_InvigilatorClash(self, Controller):
+        pass
+
+    def calculateFitness_ConsecutiveInvigilations(self, Controller):
+        pass
 
 class Population:
     def __init__(self, size, Controller):
