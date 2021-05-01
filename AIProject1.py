@@ -68,7 +68,7 @@ class ControllerClass:
             for row in csv_reader:
                 if(row):
                     name=row[0]
-    #             print(name)
+                    # print(name)
                     obj=Teacher(name)
                     teacherList.append(obj)
                     line_count=line_count+1
@@ -84,11 +84,11 @@ class ControllerClass:
             for row in csv_reader:
                 name=row[0]
                 emptylist=[]
-    #          print(name)
+                # print(name)
                 obj=Student(name,emptylist,0)
                 studentList.append(obj)
                 line_count=line_count+1
-    #       print(f'Processed {line_count} lines.')
+                # print(f'Processed {line_count} lines.')
             self.studentList=studentList
             
 
@@ -120,21 +120,11 @@ class ControllerClass:
                                     y.courseCount=y.courseCount+1
                                     
                                     break
-                                                  
-                         
-
                 line_count=line_count+1   
-
-
-
-                 
     #      print(f'Processed {line_count} lines.')
             for x in self.courseList:
                 print(x.courseName, x.count)
                
-
-
-   
 
 
 class Course:
@@ -144,8 +134,6 @@ class Course:
         self.studentsRegistered=studentsRegistered
         self.count=count
         self.flag=False #exam scheduled or not
-
-
 
 class Student:
 
@@ -162,12 +150,6 @@ class Teacher:
 # Schedule->Days->Rooms->examSlots->Exam
 #
 
-'''class Exam:
-    def __init__(self, course, invigilator, roomNo, day):
-        self.course = course
-        self.invigilator = invigilator
-'''
-
 class Room:
 
     def __init__(self, roomNo, studentsCapacity = 28):
@@ -176,7 +158,7 @@ class Room:
             
             
 class ExamSlot:
-    def __init__(self, invigilator, course, studentList):
+    def __init__(self, invigilator, course, studentList, Controller):
         self.roomsList = []
         self.students = []
         self.invigilator = invigilator
@@ -185,10 +167,31 @@ class ExamSlot:
         self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
         self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
 
+        if self.startingTime['hours'] == 14:
+            self.startingTime['minutes'] = 0
+            self.endingTime['minutes'] = 0
+
         for x in studentList:
             for y in x.courseList:
-                if(y.courseName == course):
+                if(y.courseName == course.courseName):
                     self.students.append(x.studentName)
+
+        # ----randomly allocates series of rooms----
+        roomsNeeded = 0
+        if len(self.students) % 28 == 0:
+            roomsNeeded = int(len(self.students) / 28)
+        else:
+            roomsNeeded = int(len(self.students) / 28) + 1
+
+        randomNo = 0
+        randomNo = random.randint(0, len(Controller.roomList) - roomsNeeded) # we subtract roomsNeeded to keep allocation in range 
+
+        while roomsNeeded != 0:
+            self.roomsList.append(Controller.roomList[randomNo].roomNo)
+            #print("ROOOM ", Controller.roomList[randomNo].roomNo)
+            randomNo += 1
+            roomsNeeded -= 1
+
 
     def addRoom(self, roomNo, Courses,teachers,students,studentsCapacity):
         room = Room(roomNo, Courses, teachers,students,studentsCapacity)
@@ -201,17 +204,11 @@ class Day:
         self.examSlotList = []
         self.teachersOnDuty = []
         
-    def addExamSlot(self, teacherList, course, studentList):  # adds examSlot only if there is time available between 9am-5pm        
+    def addExamSlot(self, teacherList, course, studentList, Controller):  # adds examSlot only if there is time available between 9am-5pm        
         
-        # select invigilator that isn't invigilating any other exam that day
-        invigilator = random.choice(teacherList)
-
-        while invigilator in self.teachersOnDuty:
-            invigilator = random.choice(teacherList)
-
-        
+        invigilator = random.choice(teacherList).teacherName
         self.teachersOnDuty.append(invigilator)
-        self.examSlotList.append(ExamSlot(invigilator.teacherName, course, studentList))
+        self.examSlotList.append(ExamSlot(invigilator, course, studentList, Controller))
 
 class Schedule:
     def __init__(self, Controller):
@@ -219,7 +216,6 @@ class Schedule:
 
         roomList = Controller.roomList
         studentList = Controller.studentList
-        print("SSSSSSSSS", studentList)
         courseList = Controller.courseList
         teacherList = Controller.teacherList          # NEW COPIES OF LISTS
         self.daysList = []                            # list of days having list of exams
@@ -229,25 +225,29 @@ class Schedule:
         self.makeRandSchedule(Controller, teacherList, courseList, studentList)
     
     def makeRandSchedule(self, Controller, teacherList, courseList, studentList): 
-        for course in Controller.courseList:
-            #randomDay = random.choice(self.daysList)
-            random.choice(self.daysList).addExamSlot(teacherList, course, studentList)
+        for course in range(len(Controller.courseList)):
+            random.choice(self.daysList).addExamSlot(teacherList, random.choice(Controller.courseList), studentList, Controller)
 
+
+class Individual:
+
+    def calculateFitness_InvigilatorClash(self, Controller):
 
 class Population:
     def __init__(self, size, Controller):
         self.size = size
-        self.scheduleList = [Schedule(Controller)] * size
+        self.population = [Individual(Schedule(Controller), Controller)] * size     # each schedule is a chromosome
 
     def displayPopulation(self):
         for schedule in range(self.size):          # Schedules
             print("----------------------------------Schedule # ", schedule, "----------------------------------")
-            for day in self.scheduleList[schedule].daysList:            # days inside schedules
+            for day in self.population[schedule].chromosome.daysList:            # days inside schedules
                 print("\nDay: ", day.dayNo)
                 for examSlot in day.examSlotList:
                     print("\nCourse: ", examSlot.course, " Invigilator: ", examSlot.invigilator)
                     print("Time: ", examSlot.startingTime, " - ", examSlot.endingTime)
                     print("Students: ", examSlot.students)
+                    print("Rooms: ", examSlot.roomsList)
                    
         
     # FITNESS STUFF
@@ -263,20 +263,7 @@ class Population:
     • A teacher cannot invigilate two exams in a row. (Indirectly Done :D)
     '''
 
-    def calculateFitness_Population(self, Controller):
-        pass
-
-    def calculateFitness_EveryCourseScheduled(self, Controller, schedule):
-        pass
-
-    def calculateFitness_StudentClash(self, Controller, schedule):
-        pass
-
-    def calculateFitness_InvigilatorClash(self, Controller, schedule):
-        pass
-
-    def calculateFitness_ConsecutiveInvigilations(self, Controller, schedule):
-        pass
+    
 
 Controller = ControllerClass(None, None, None, None)
 Controller.readCourses("courses.csv")
