@@ -306,6 +306,7 @@ class Population:
     ~ Each exam must be held between 9 am and 5 pm (done)
     • Each exam must be invigilated by a teacher. A teacher cannot invigilate two exams at the same
     time. (Indirectly Done :D)
+
     • A teacher cannot invigilate two exams in a row. (Indirectly Done :D)
     '''
 
