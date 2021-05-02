@@ -236,14 +236,15 @@ class Individual:
         self.fitness = 0
 
     def calculateFitness(self, Controller):
-        self.calculateFitness_StudentClash(Controller)
-        self.calculateFitness_EveryCourseScheduled(Controller)
-        self.calculateFitness_InvigilatorClash(Controller)
-        self.calculateFitness_ConsecutiveInvigilations(Controller)
+        self.fitness=self.calculateFitness_StudentClash(Controller)
+        self.fitness+=self.calculateFitness_EveryCourseScheduled(Controller)
+        self.fitness+=self.calculateFitness_InvigilatorClash(Controller)
+   #     self.fitness+=self.calculateFitness_ConsecutiveInvigilations(Controller)
 
         return self.fitness
 
     def calculateFitness_EveryCourseScheduled(self, Controller):  # for each course not present in schedule fitness += 1
+        fitness=0
         coursesInSchedule = []
         for day in self.chromosome.daysList:
             for exam in day.examSlotList:
@@ -255,20 +256,21 @@ class Individual:
         
         for course in coursesInCourseList:
             if course not in coursesInSchedule:
-                self.fitness += 1
-
+                fitness += 1
+        return fitness
 
     def calculateFitness_StudentClash(self, Controller):
+        fitness=0
         for day in self.chromosome.daysList:
             examSchedule=[] #This list contains all exams scheduled on a particular day
             for exam in day.examSlotList:
                 examSchedule.append(exam)
             for exam in day.examSlotList:
                 for x in exam.students:
-                    print(x.studentName," on day ",day.dayNo)
+            #        print(x.studentName," on day ",day.dayNo)
                     check=self.checkTimings(examSchedule, x.courseList)
-                    self.fitness+=check
-
+                    fitness+=check
+        return fitness
                    
 
 
@@ -286,14 +288,15 @@ class Individual:
                     course2=exam.course.courseName
                                       
                 
-        print("Number of exams in a day: ",count)
+    #    print("Number of exams in a day: ",count)
         if count > 2:
-            print("Two exams already")
+         #   print("Two exams already")
             return (count-2) #More than 2 exams scheduled in a day of a student
         else:
             return 0 #Clash Free
 
     def calculateFitness_InvigilatorClash(self, Controller):
+        fitness=0
         for day in self.chromosome.daysList:           
             for exam in day.examSlotList:
                 count=0
@@ -307,11 +310,25 @@ class Individual:
                         break
                     
                 continue
-
+        return fitness
                 
 
     def calculateFitness_ConsecutiveInvigilations(self, Controller):
         pass #We don't need this
+
+
+
+    def displayIndividual(self):
+        for day in self.chromosome.daysList:
+            print("\nDay: ", day.dayNo)
+            for examSlot in day.examSlotList:
+                print("\nCourse: ", examSlot.course.courseName, " Invigilator: ", examSlot.invigilator)
+                print("Time: ", examSlot.startingTime, " - ", examSlot.endingTime)
+                print("Students: ")
+                for x in examSlot.students:
+                    print(x.studentName, end=", ")
+                print("Rooms: ", examSlot.roomsList)
+
 
 class Population:
     def __init__(self, size, Controller):
@@ -321,32 +338,43 @@ class Population:
     def displayPopulation(self):
         for schedule in range(self.size):          # Schedules
             print("----------------------------------Schedule # ", schedule, "----------------------------------")
-            for day in self.population[schedule].chromosome.daysList:            # days inside schedules
-                print("\nDay: ", day.dayNo)
-                for examSlot in day.examSlotList:
-                    print("\nCourse: ", examSlot.course.courseName, " Invigilator: ", examSlot.invigilator)
-                    print("Time: ", examSlot.startingTime, " - ", examSlot.endingTime)
-                    print("Students: ")
-                    for x in examSlot.students:
-                        print(x.studentName, end=", ")
-                    print("Rooms: ", examSlot.roomsList)
-        
+            self.population[schedule].displayIndividual()
+       
         print("Calculate fitness: ",self.population[0].calculateFitness(Controller))
+        print("Calculate fitness: ",self.population[1].calculateFitness(Controller))
 
 
     def selectIndividual(self,Controller): #Selects Individuals with minimum number of conflicts
-        min1=min2=self.population[0].calculateFitness()
+        min1=min2=self.population[0].calculateFitness(Controller)
         Individual1=self.population[0]
         Individual2=self.population[0]
+        print("---------------------Selected Individuals--------------------------")
         for schedule in range(self.size): 
-            for x in self.population[schedule]:
+            for x in self.population:
                 if (min1> x.calculateFitness(Controller)):
                     min1=x.calculateFitness(Controller)
                     Individual1=x
                 elif (min2> x.calculateFitness(Controller)):
                     min2=x.calculateFitness(Controller)
                     Individual2=x
-     
+        
+        self.crossOver(Individual1, Individual2)
+    #    Individual1.displayIndividual()
+    #    Individual2.displayIndividual()
+
+    def crossOver(self,Individual1,Individual2):
+        #swapping alternate days in new individual
+        offspring=Individual1
+        i=0
+        for day in offspring.chromosome.daysList:
+            if (i%2==0): #taking even days from individual 1
+                day=Individual1.chromosome.daysList[i]
+            elif (i%2==1): #taking odd days from individual 2
+                day=Individual2.chromosome.daysList[i]
+        
+        offspring.displayIndividual()
+        
+        
         
     # FITNESS STUFF
     '''
@@ -372,3 +400,4 @@ Controller.readRooms("rooms.csv")
 
 population = Population(10, Controller)
 population.displayPopulation()
+population.selectIndividual(Controller)
