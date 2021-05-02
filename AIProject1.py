@@ -13,7 +13,6 @@ from itertools import chain, combinations
 from queue import Queue
 import csv
 
-
 class ControllerClass:
     def __init__(self, studentList, courseList, teacherList, roomList):
         self.studentList=studentList
@@ -162,7 +161,7 @@ class ExamSlot:
         self.roomsList = []
         self.students = []
         self.invigilator = invigilator
-        self.course = course.courseName
+        self.course = course
         # 3 hour exam
         self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
         self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
@@ -212,12 +211,12 @@ class Day:
 
 class Schedule:
     def __init__(self, Controller):
-        self.fitness = None                         # if ZERO, that's our result
 
         roomList = Controller.roomList
         studentList = Controller.studentList
         courseList = Controller.courseList
         teacherList = Controller.teacherList          # NEW COPIES OF LISTS
+
         self.daysList = []                            # list of days having list of exams
         for dayNo in range(5): self.daysList.append(Day(dayNo, courseList, teacherList, studentList))
 
@@ -238,8 +237,20 @@ class Individual:
     def calculateFitness(self, Controller):
         pass
 
-    def calculateFitness_EveryCourseScheduled(self, Controller):  # if not then fitness of chromosome += 1
-        pass
+    def calculateFitness_EveryCourseScheduled(self, Controller):  # for each course not present in schedule fitness += 1
+        coursesInSchedule = []
+        for day in self.chromosome.daysList:
+            for exam in day.examSlotList:
+                coursesInSchedule.append(exam.course.courseName)
+
+        coursesInCourseList = []
+        for course in Controller.courseList:
+            coursesInCourseList.append(course.courseName)
+        
+        for course in coursesInCourseList:
+            if course not in coursesInSchedule:
+                self.fitness += 1
+
 
     def calculateFitness_StudentClash(self, Controller):
         pass
@@ -261,7 +272,7 @@ class Population:
             for day in self.population[schedule].chromosome.daysList:            # days inside schedules
                 print("\nDay: ", day.dayNo)
                 for examSlot in day.examSlotList:
-                    print("\nCourse: ", examSlot.course, " Invigilator: ", examSlot.invigilator)
+                    print("\nCourse: ", examSlot.course.courseName, " Invigilator: ", examSlot.invigilator)
                     print("Time: ", examSlot.startingTime, " - ", examSlot.endingTime)
                     print("Students: ", examSlot.students)
                     print("Rooms: ", examSlot.roomsList)
