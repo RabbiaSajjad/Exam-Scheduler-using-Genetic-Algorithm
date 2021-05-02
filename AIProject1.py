@@ -173,7 +173,8 @@ class ExamSlot:
         for x in studentList:
             for y in x.courseList:
                 if(y.courseName == course.courseName):
-                    self.students.append(x.studentName)
+                    self.students.append(x)
+                   
 
         # ----randomly allocates series of rooms----
         roomsNeeded = 0
@@ -232,10 +233,15 @@ class Individual:
 
     def __init__(self, chromosome, Controller):
         self.chromosome = chromosome 
-        self.fitness = self.calculateFitness(Controller)
+        self.fitness = 0
 
     def calculateFitness(self, Controller):
-        pass
+        self.calculateFitness_StudentClash(Controller)
+        self.calculateFitness_EveryCourseScheduled(Controller)
+        self.calculateFitness_InvigilatorClash(Controller)
+        self.calculateFitness_ConsecutiveInvigilations(Controller)
+
+        return self.fitness
 
     def calculateFitness_EveryCourseScheduled(self, Controller):  # for each course not present in schedule fitness += 1
         coursesInSchedule = []
@@ -253,13 +259,59 @@ class Individual:
 
 
     def calculateFitness_StudentClash(self, Controller):
-        pass
+        for day in self.chromosome.daysList:
+            examSchedule=[] #This list contains all exams scheduled on a particular day
+            for exam in day.examSlotList:
+                examSchedule.append(exam)
+            for exam in day.examSlotList:
+                for x in exam.students:
+                    print(x.studentName," on day ",day.dayNo)
+                    check=self.checkTimings(examSchedule, x.courseList)
+                    self.fitness+=check
+
+                   
+
+
+    def checkTimings(self,exams, courses):
+        count=0
+        course1=course2=''
+        for exam in exams:
+            if(exam.course in courses):
+                count=count+1
+                if (count==1):
+                    course1=exam.course.courseName
+                    
+                
+                elif(count==2):
+                    course2=exam.course.courseName
+                                      
+                
+        print("Number of exams in a day: ",count)
+        if count > 2:
+            print("Two exams already")
+            return (count-2) #More than 2 exams scheduled in a day of a student
+        else:
+            return 0 #Clash Free
 
     def calculateFitness_InvigilatorClash(self, Controller):
-        pass
+        for day in self.chromosome.daysList:           
+            for exam in day.examSlotList:
+                count=0
+                invigilator=exam.invigilator
+                for x in day.examSlotList:
+                    if(invigilator==x.invigilator):
+                        count=count+1
+                    if(count>1): 
+                        print("Invigilator Clash: ", exam.invigilator, " on day ",day.dayNo)         
+                        self.fitness+=1
+                        break
+                    
+                continue
+
+                
 
     def calculateFitness_ConsecutiveInvigilations(self, Controller):
-        pass
+        pass #We don't need this
 
 class Population:
     def __init__(self, size, Controller):
@@ -274,9 +326,27 @@ class Population:
                 for examSlot in day.examSlotList:
                     print("\nCourse: ", examSlot.course.courseName, " Invigilator: ", examSlot.invigilator)
                     print("Time: ", examSlot.startingTime, " - ", examSlot.endingTime)
-                    print("Students: ", examSlot.students)
+                    print("Students: ")
+                    for x in examSlot.students:
+                        print(x.studentName, end=", ")
                     print("Rooms: ", examSlot.roomsList)
-                   
+        
+        print("Calculate fitness: ",self.population[0].calculateFitness(Controller))
+
+
+    def selectIndividual(self,Controller): #Selects Individuals with minimum number of conflicts
+        min1=min2=self.population[0].calculateFitness()
+        Individual1=self.population[0]
+        Individual2=self.population[0]
+        for schedule in range(self.size): 
+            for x in self.population[schedule]:
+                if (min1> x.calculateFitness(Controller)):
+                    min1=x.calculateFitness(Controller)
+                    Individual1=x
+                elif (min2> x.calculateFitness(Controller)):
+                    min2=x.calculateFitness(Controller)
+                    Individual2=x
+     
         
     # FITNESS STUFF
     '''
