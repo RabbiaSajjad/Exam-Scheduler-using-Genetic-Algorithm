@@ -162,13 +162,23 @@ class ExamSlot:
         self.students = []
         self.invigilator = invigilator
         self.course = course
-        # 3 hour exam
-        self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
-        self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
 
+        # 3 hour exam
+        slot = random.randint(0, 1)
+        if slot == 0:
+            self.startingTime = {'hours': 9, 'minutes': 0} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
+            self.endingTime = {'hours': 12, 'minutes': 0} # any minute multiple of 10 (eg. 9:10, 3:50)
+        if slot == 1:
+            self.startingTime = {'hours': 2, 'minutes': 0} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
+            self.endingTime = {'hours': 5, 'minutes': 0} # any minute multiple of 10 (eg. 9:10, 3:50)
+
+        # Alternative random slot generating code:
+        """ self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
+        self.endingTime = {'hours': self.startingTime['hours'] + 3, 'minutes': self.startingTime['minutes']} # any minute multiple of 10 (eg. 9:10, 3:50)
         if self.startingTime['hours'] == 14:
             self.startingTime['minutes'] = 0
             self.endingTime['minutes'] = 0
+        """
 
         for x in studentList:
             for y in x.courseList:
