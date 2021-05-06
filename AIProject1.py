@@ -64,7 +64,6 @@ class ControllerClass:
             for row in csv_reader:
                 if(row):
                     name=row[0]
-                    # print(name)
                     obj=Teacher(name)
                     teacherList.append(obj)
                     line_count=line_count+1
@@ -80,11 +79,9 @@ class ControllerClass:
             for row in csv_reader:
                 name=row[0]
                 emptylist=[]
-                # print(name)
                 obj=Student(name,emptylist,0)
                 studentList.append(obj)
                 line_count=line_count+1
-                # print(f'Processed {line_count} lines.')
             self.studentList=studentList
             
 
@@ -97,7 +94,6 @@ class ControllerClass:
             for row in csv_reader:
                 name=row[1]
                 code=row[2]
-        #        print(name,code)
                 for y in self.studentList:
                     flag=False
                     if(y.studentName == name):
@@ -117,7 +113,6 @@ class ControllerClass:
                                     
                                     break
                 line_count=line_count+1   
-    #      print(f'Processed {line_count} lines.')
             i=0
             for x in self.courseList:
                 if x.count == 0:
@@ -273,7 +268,6 @@ class Schedule:
             while (Course in self.examScheduled):
                 Course=random.choice(Controller.courseList)
             self.examScheduled.append(Course)  
-       #     print("TRue")  
             random.choice(self.daysList).addExamSlot(teacherList, Course, studentList, Controller)
 
 
@@ -294,7 +288,7 @@ class Individual:
       #  print("Invigilator Fitness: ",self.fitness)
    #     self.fitness+=self.calculateFitness_ConsecutiveInvigilations(Controller)
 
-        return self.fitness
+        return (self.fitness)
 
     def calculateFitness_EveryCourseScheduled(self, Controller):  # for each course not present in schedule fitness += 1
         fitness=0
@@ -323,13 +317,14 @@ class Individual:
             for exam in day.examSlotList:
                 for x in exam.students:
                     check=self.checkTimings(examSchedule, x.courseList)
+          #          print(x.studentName + " : ")
                     if(check!=0):
                         fitness+=1
                         count+=1
                       #  print(x.studentName," on day ",day.dayNo," have clashes count",check)
                   #  if(check!=0):
                         #print(x.studentName," on day ",day.dayNo," have clashes count",check)
- #       print("COUNT: ",count)    
+  
         return fitness
                    
 
@@ -339,12 +334,13 @@ class Individual:
         course1=course2=''
         for exam in exams:
             if(exam.course in courses):
+    #            print(exam.course.courseName)
                 count=count+1
                
                                       
              
         if count > 2:
-            return (count-2) #More than 2 exams scheduled in a day of a student
+            return (count-1) #More than 2 exams scheduled in a day of a student
         else:
             return 0 #Clash Free
 
@@ -363,7 +359,7 @@ class Individual:
                     count=0 
                     if(z.teacherName in invigilatorList):
                         count=count+1
-                    if(count>1): 
+                    if(count>1): #This is true when there's an invigilator clash or an invigilator has consecutive duties
         #                print("Invigilator Clash: ", z.teacherName, " on day ",day.dayNo)         
                         self.fitness+=1
                         break
@@ -376,7 +372,8 @@ class Individual:
         pass #We don't need this
 
 
-#
+    def calculateFitness_consecutiveExams(self,Controller):
+        pass
 
 
     def displayIndividual(self):
@@ -424,7 +421,6 @@ class Population:
         for schedule in range(self.size): 
             for x in self.population:
                 if (min1> x.calculateFitness(Controller)):
-                #    min2=min1
                     min1=x.calculateFitness(Controller)
                     Individual1=x                                           
                 elif (min2> x.calculateFitness(Controller) and x.calculateFitness(Controller)!=min1):
@@ -441,7 +437,7 @@ class Population:
             Individual2.displayIndividual()    
             sys.exit("Solution found!")
         
-   #     self.crossOver(Individual1, Individual2)
+ 
         return Individual1,Individual2
         
 
@@ -473,36 +469,47 @@ class Population:
                 self.copyDay(offspring.chromosome,Individual2.chromosome, i)
             i=i+1
         print("---------------------Offspring--------------------------")
-  #      offspring.displayIndividual()
+ 
         print("Offspring Fitness: ")
         print(offspring.calculateFitness(Controller))
-        if(offspring.calculateFitness(Controller)==9):
+        if(offspring.calculateFitness(Controller)==0):
             offspring.displayIndividual()
-            sys.exit("Solution found!")
+            sys.exit("\nSolution found!")
 
         return offspring,Individual1    
-    #    self.mutation(offspring,Individual1)
+    
 
-    def mixGenes(self,offspring):
-        offspringCourseList=[]
-        offspringTeacherList=[]
-        for days in offspring.chromosome.daysList:
-            for exams in days.examSlotList:
-                offspringCourseList.append(exams.course)
-                for x in exams.invigilator:
-                    offspringTeacherList.append(x)
+    def mixGenes(self,offspring,individual1):
 
-        
-      
+        mut_prob = 0.9
+
         for i in range(2,self.size):
-            self.population[i].chromosome=Schedule(Controller,offspringCourseList,offspringTeacherList)
+            self.population[i].chromosome=Schedule(Controller,Controller.courseList,Controller.teacherList) 
+
+            offspringTeacherList=[]
+            offspringCourseList=[]
+            if random.random() < mut_prob:
+                rand=random.randint(0,len(offspring.chromosome.daysList)-1)
                 
-               
-             
+                for exams in offspring.chromosome.daysList[rand].examSlotList:
+                    offspringCourseList.append(exams.course)
+                    for x in exams.invigilator:
+                        offspringTeacherList.append(x)
+
+                if(len(offspringTeacherList)!=0 and len(offspringCourseList)!=0):       
+                    self.population[i].chromosome=Schedule(Controller, offspringCourseList,offspringTeacherList)                
+                    
+           
+
+
         
        
                 
-     
+        
+
+        
+      
+    
               
         
         
@@ -516,7 +523,7 @@ class Population:
 
         
         print("---------------------New Generation--------------------------")
-        self.mixGenes(offspring)
+        self.mixGenes(offspring,Individual1)
         
         self.displayPopulation()
 
@@ -529,13 +536,13 @@ class Population:
     '''
     Hard Constraints
     • An exam will be scheduled for each course. (Done)
-    • A student is enrolled in at least 3 courses. A student cannot give more than 1 exam at a time.
+    • A student is enrolled in at least 3 courses. A student cannot give more than 1 exam at a time.(Done)
     ~ Exam will not be held on weekends. (Done)
     ~ Each exam must be held between 9 am and 5 pm (done)
     • Each exam must be invigilated by a teacher. A teacher cannot invigilate two exams at the same
-    time. (Indirectly Done :D)
+    time. (Done :D)
 
-    • A teacher cannot invigilate two exams in a row. (Indirectly Done :D)
+    • A teacher cannot invigilate two exams in a row. ( Done :D)
     '''
 
     
