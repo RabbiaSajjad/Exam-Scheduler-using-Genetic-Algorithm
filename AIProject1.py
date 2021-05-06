@@ -162,14 +162,14 @@ class Room:
             
             
 class ExamSlot:
-    def __init__(self, invigilator, course, studentList, Controller):
+    def __init__(self, invigilator, course, studentList,roomList,slot, Controller):
         self.roomsList = []
         self.students = []
         self.invigilator = []
         self.course = course
         
         # 3 hour exam
-        slot = random.randint(0, 1)
+   #     slot = random.randint(0, 1)
         if slot == 0:
             self.startingTime = {'hours': 9, 'minutes': 0} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
             self.endingTime = {'hours': 12, 'minutes': 0} # any minute multiple of 10 (eg. 9:10, 3:50)
@@ -202,12 +202,20 @@ class ExamSlot:
         else:
             roomsNeeded = int(len(self.students) / 28) + 1
             
-
+        
         randomNo = 0
         randomNo = random.randint(0, len(Controller.roomList) - roomsNeeded) # we subtract roomsNeeded to keep allocation in range 
         rand = random.randint(0, len(Controller.teacherList)-1)
         while roomsNeeded != 0:
+            count=0
+            while(Controller.roomList[randomNo] in roomList):
+                randomNo = random.randint(0, len(Controller.roomList) - roomsNeeded)
+                count+=1
+                if count==9:
+                    break
+            count=0
             self.roomsList.append(Controller.roomList[randomNo])
+            roomList.append(Controller.roomList[randomNo])
             self.invigilator.append(Controller.teacherList[rand])
             rand = random.randint(0, len(Controller.teacherList)-1)
             randomNo += 1
@@ -220,18 +228,19 @@ class ExamSlot:
 
                 
 class Day:
-    def __init__(self, dayNo, courseList, teacherList, studentList):
+    def __init__(self, dayNo, courseList, teacherList, studentList, roomList):
         self.dayNo = dayNo
         self.examSlotList = []
         self.teachersOnDuty = []
-        self.slotsEmpty=False
+        self.slotsEmpty=True
+        self.roomList=[]
+        self.slot=[]
 
         
-    def addExamSlot(self, teacherList, course, studentList, Controller):  # adds examSlot only if there is time available between 9am-5pm        
-        
+    def addExamSlot(self, teacherList, course, studentList,roomList,slot, Controller):  # adds examSlot only if there is time available between 9am-5pm        
         invigilator = random.choice(teacherList)
         self.teachersOnDuty.append(invigilator)
-        self.examSlotList.append(ExamSlot(invigilator, course, studentList, Controller))
+        self.examSlotList.append(ExamSlot(invigilator, course, studentList,roomList, slot,Controller))
 
 class Schedule:
     def __init__(self, Controller, courseList, teacherList):
@@ -252,7 +261,7 @@ class Schedule:
                 b = bin(i)[2:]
                 l = len(b)
                 b = str(0) * (n - l) + b
-            self.daysList.append(Day(dayNo, self.courseList, self.teacherList, self.studentList))
+            self.daysList.append(Day(dayNo, self.courseList, self.teacherList, self.studentList,self.roomList))
 
         # initialize random schedule for 5 days
         self.makeRandSchedule(Controller, self.teacherList, self.courseList, self.studentList)
@@ -268,7 +277,13 @@ class Schedule:
             while (Course in self.examScheduled):
                 Course=random.choice(Controller.courseList)
             self.examScheduled.append(Course)  
-            random.choice(self.daysList).addExamSlot(teacherList, Course, studentList, Controller)
+            day=random.choice(self.daysList)      
+            slot=random.randint(0,1)
+            day.slot.append(slot)
+            if(len(day.slot)==2):
+                day.slotsEmpty=False
+            
+            day.addExamSlot(teacherList, Course, studentList,day.roomList,slot, Controller)
 
 
 class Individual:
@@ -391,10 +406,11 @@ class Individual:
         table = [["Day", "9:00 - 12:00", "2:00 - 5:00"]]
         examsInADayCol1 = []
         examsInADayCol2 = []
-        roomsForAnExam = []
+        
 
         for day in self.chromosome.daysList:    
             for examSlot in day.examSlotList:
+                roomsForAnExam = []
                 for room in examSlot.roomsList:
                     roomsForAnExam.append(room.roomNo)
                 if examSlot.startingTime['hours'] == 9:
@@ -409,6 +425,10 @@ class Individual:
             roomsForAnExam.clear()
 
         print("\n\n", tabulate(table, tablefmt='grid'))
+
+  
+                
+
 
 class Population:
     def __init__(self, size, Controller):
@@ -452,7 +472,7 @@ class Population:
             Individual1.displayIndividualAsTable()
             sys.exit("Solution found!")
         elif (Individual2.calculateFitness(Controller)==1):
-            Individual2.displayIndividual()    
+            Individual2.displayIndividual()  
             Individual2.displayIndividualAsTable()    
             sys.exit("Solution found!")
         
@@ -491,7 +511,8 @@ class Population:
  
         print("Offspring Fitness: ")
         print(offspring.calculateFitness(Controller))
-        if(offspring.calculateFitness(Controller)>5.5):
+        if(offspring.calculateFitness(Controller)==1):
+            
             offspring.displayIndividual()
             offspring.displayIndividualAsTable()
             sys.exit("\nSolution found!")
