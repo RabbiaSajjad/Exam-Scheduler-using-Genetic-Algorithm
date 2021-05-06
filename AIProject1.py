@@ -173,11 +173,11 @@ class ExamSlot:
         if slot == 0:
             self.startingTime = {'hours': 9, 'minutes': 0} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
             self.endingTime = {'hours': 12, 'minutes': 0} # any minute multiple of 10 (eg. 9:10, 3:50)
-            self.Timegene="0"
+          
         if slot == 1:
             self.startingTime = {'hours': 2, 'minutes': 0} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
             self.endingTime = {'hours': 5, 'minutes': 0} # any minute multiple of 10 (eg. 9:10, 3:50)
-            self.Timegene="1"
+          
 
         # Alternative random slot generating code:
         """ self.startingTime = {'hours': random.randint(9, 14), 'minutes': random.randrange(0, 59, 10)} # in 24 hour format (9am to 5pm) - starting time cannot be more than 2pm
@@ -220,11 +220,11 @@ class ExamSlot:
 
                 
 class Day:
-    def __init__(self, dayNo, courseList, teacherList, studentList,gene):
+    def __init__(self, dayNo, courseList, teacherList, studentList):
         self.dayNo = dayNo
         self.examSlotList = []
         self.teachersOnDuty = []
-        self.gene=gene
+        self.slotsEmpty=False
 
         
     def addExamSlot(self, teacherList, course, studentList, Controller):  # adds examSlot only if there is time available between 9am-5pm        
@@ -252,7 +252,7 @@ class Schedule:
                 b = bin(i)[2:]
                 l = len(b)
                 b = str(0) * (n - l) + b
-            self.daysList.append(Day(dayNo, self.courseList, self.teacherList, self.studentList,b))
+            self.daysList.append(Day(dayNo, self.courseList, self.teacherList, self.studentList))
 
         # initialize random schedule for 5 days
         self.makeRandSchedule(Controller, self.teacherList, self.courseList, self.studentList)
@@ -288,7 +288,7 @@ class Individual:
       #  print("Invigilator Fitness: ",self.fitness)
    #     self.fitness+=self.calculateFitness_ConsecutiveInvigilations(Controller)
 
-        return (self.fitness)
+        return round(1/(self.fitness+1),4)
 
     def calculateFitness_EveryCourseScheduled(self, Controller):  # for each course not present in schedule fitness += 1
         fitness=0
@@ -368,12 +368,7 @@ class Individual:
         return fitness
                 
 
-    def calculateFitness_ConsecutiveInvigilations(self, Controller):
-        pass #We don't need this
-
-
-    def calculateFitness_consecutiveExams(self,Controller):
-        pass
+   
 
 
     def displayIndividual(self):
@@ -435,28 +430,28 @@ class Population:
 
 
     def selectIndividual(self,Controller): #Selects Individuals with minimum number of conflicts
-        min1=float('inf')
-        min2=float('inf')
+        min1=float('-inf')
+        min2=float('-inf')
         Individual1=self.population[0]
         Individual2=self.population[0]
         print("---------------------Selected Individuals--------------------------")
         for schedule in range(self.size): 
             for x in self.population:
-                if (min1> x.calculateFitness(Controller)):
+                if (min1<x.calculateFitness(Controller)):
                     min1=x.calculateFitness(Controller)
                     Individual1=x                                           
-                elif (min2> x.calculateFitness(Controller) and x.calculateFitness(Controller)!=min1):
+                elif (min2< x.calculateFitness(Controller) and x!=Individual1):
                     min2=x.calculateFitness(Controller)
                     Individual2=x
         
   #      Individual1.displayIndividual()
  #       Individual2.displayIndividual()
         print(Individual1.calculateFitness(Controller), Individual2.calculateFitness(Controller))
-        if(Individual1.calculateFitness(Controller)==0):
+        if(Individual1.calculateFitness(Controller)==1):
             Individual1.displayIndividual()
             Individual1.displayIndividualAsTable()
             sys.exit("Solution found!")
-        elif (Individual2.calculateFitness(Controller)==0):
+        elif (Individual2.calculateFitness(Controller)==1):
             Individual2.displayIndividual()    
             Individual2.displayIndividualAsTable()    
             sys.exit("Solution found!")
@@ -496,7 +491,7 @@ class Population:
  
         print("Offspring Fitness: ")
         print(offspring.calculateFitness(Controller))
-        if(offspring.calculateFitness(Controller)==0):
+        if(offspring.calculateFitness(Controller)>5.5):
             offspring.displayIndividual()
             offspring.displayIndividualAsTable()
             sys.exit("\nSolution found!")
