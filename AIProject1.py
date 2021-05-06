@@ -10,7 +10,7 @@ import numpy as np
 from itertools import chain, combinations
 from queue import Queue
 import csv
-
+from tabulate import tabulate
 
 class ControllerClass:
     def __init__(self, studentList, courseList, teacherList, roomList):
@@ -391,7 +391,29 @@ class Individual:
                 for x in examSlot.roomsList:
                     print(x.roomNo, end=", ")
             
+    def displayIndividualAsTable(self):
+        week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        table = [["Day", "9:00 - 12:00", "2:00 - 5:00"]]
+        examsInADayCol1 = []
+        examsInADayCol2 = []
+        roomsForAnExam = []
 
+        for day in self.chromosome.daysList:    
+            for examSlot in day.examSlotList:
+                for room in examSlot.roomsList:
+                    roomsForAnExam.append(room.roomNo)
+                if examSlot.startingTime['hours'] == 9:
+                    examsInADayCol1.append(examSlot.course.courseName + "(" + ",".join(roomsForAnExam) + ")")
+                elif examSlot.startingTime['hours'] == 2:
+                    examsInADayCol2.append(examSlot.course.courseName + "(" + ",".join(roomsForAnExam) + ")")
+
+            dayName = week[day.dayNo % 5]
+            table.append([dayName, "\n".join(examsInADayCol1), "\n".join(examsInADayCol2)])
+            examsInADayCol1.clear()
+            examsInADayCol2.clear()
+            roomsForAnExam.clear()
+
+        print("\n\n", tabulate(table, tablefmt='grid'))
 
 class Population:
     def __init__(self, size, Controller):
@@ -431,10 +453,12 @@ class Population:
  #       Individual2.displayIndividual()
         print(Individual1.calculateFitness(Controller), Individual2.calculateFitness(Controller))
         if(Individual1.calculateFitness(Controller)==0):
-            Individual1.displayIndividual()  
+            Individual1.displayIndividual()
+            Individual1.displayIndividualAsTable()
             sys.exit("Solution found!")
         elif (Individual2.calculateFitness(Controller)==0):
             Individual2.displayIndividual()    
+            Individual2.displayIndividualAsTable()    
             sys.exit("Solution found!")
         
  
@@ -474,9 +498,13 @@ class Population:
         print(offspring.calculateFitness(Controller))
         if(offspring.calculateFitness(Controller)==0):
             offspring.displayIndividual()
+            offspring.displayIndividualAsTable()
             sys.exit("\nSolution found!")
 
-        return offspring,Individual1    
+        return offspring,Individual1
+        #if(offspring.calculateFitness(Controller) < Individual1.calculateFitness(Controller)):
+        #    return offspring,Individual1
+        #return Individual1,Individual2
     
 
     def mixGenes(self,offspring,individual1):
@@ -502,25 +530,9 @@ class Population:
            
 
 
-        
-       
-                
-        
-
-        
-      
-    
-              
-        
-        
-        
-                
-        
-
     def mutation(self,offspring,Individual1):
         self.population[0]=offspring
         self.population[1]=Individual1
-
         
         print("---------------------New Generation--------------------------")
         self.mixGenes(offspring,Individual1)
@@ -528,10 +540,6 @@ class Population:
         self.displayPopulation()
 
 
-        
-        
-        
-        
     # FITNESS STUFF
     '''
     Hard Constraints
@@ -568,6 +576,6 @@ while(1):
     NewGeneration = Population(20, Controller)
     NewGeneration.mutation(Offspring,Fittest)
     NewGeneration.displayPopulation()
-    Fittest,SecondFittest=NewGeneration.selectIndividual(Controller)
-    Offspring,Fittest=NewGeneration.crossOver(Fittest,SecondFittest)
+    Fittest,SecondFittest = NewGeneration.selectIndividual(Controller)
+    Offspring,Fittest = NewGeneration.crossOver(Fittest,SecondFittest)
     generation=generation+1
